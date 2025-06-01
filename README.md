@@ -6,7 +6,7 @@ AI-powered learning assistant designed to make educational content more accessib
 2. Paste OpenAI API key in secrets.toml
 3. python -m streamlit run app.py
 
-**📽️ What it does: **  
+**📽️ What it does:**  
 
 MindMate transforms YouTube educational videos into concise, interactive study materials, including:  
 ✍️ Simplified notes with summaries, key takeaways, mnemonics, and quizzes  
@@ -15,7 +15,7 @@ MindMate transforms YouTube educational videos into concise, interactive study m
 🎯 Quiz-based self-assessment  
 
   
-**🧩 Key Technologies Used: **  
+**🧩 Key Technologies Used:**  
 
 **OpenAI Whisper** for speech-to-text conversion  
 **GPT-3.5 Turbo** for intelligent summarization and note generation  
