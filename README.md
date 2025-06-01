@@ -21,4 +21,11 @@ MindMate transforms YouTube educational videos into concise, interactive study m
 **GPT-3.5 Turbo** for intelligent summarization and note generation  
 **gTTS** for text-to-speech conversion  
 **Streamlit** for front-end deployment  
-**PyTube** for YouTube audio extraction
+**PyTube** for YouTube audio extraction  
+
+
+**Output:**
+![1](https://github.com/user-attachments/assets/0645ac52-b0af-4052-a38e-04816374b70e)
+![2](https://github.com/user-attachments/assets/2faccdbb-0aa4-4f15-b501-5ce0a23852f8)
+![3](https://github.com/user-attachments/assets/89aac77d-8494-4946-9924-e2d5770eac06)
+
