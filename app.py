@@ -14,8 +14,9 @@ genai.configure(api_key=st.secrets["GEMINI_KEY"])
 # LOGIC FUNCTIONS
 
 def get_video_transcript(video_url):
+    '''Extracts transcript from YouTube video ID'''
     try:
-        # Improved extraction to handle all YouTube URL types
+        # Better ID extraction for all URL types
         video_id = None
         if "v=" in video_url:
             video_id = video_url.split("v=")[1].split("&")[0]
@@ -23,25 +24,50 @@ def get_video_transcript(video_url):
             video_id = video_url.split("youtu.be/")[1].split("?")[0]
         
         if not video_id:
-            st.error("Invalid YouTube URL.")
             return None
 
-        # Try to get the transcript (includes auto-generated as fallback)
+        # Fetch transcript
         transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US'])
-        full_transcript = " ".join([i['text'] for i in transcript_list])
-        return full_transcript
+        return " ".join([i['text'] for i in transcript_list])
         
     except Exception as e:
-        # If English isn't found, this helper will look for any available transcript
+        # Try one more time with list_transcripts for auto-generated captions
         try:
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-            # Try to fetch the first available manual or auto transcript
             transcript = transcript_list.find_transcript(['en', 'en-US']).fetch()
             return " ".join([i['text'] for i in transcript])
         except:
-            st.error(f"Transcript Error: {e}")
-            st.info("Try a different video or check if CC is available in your region.")
             return None
+
+# --- UPDATED APP LOGIC SECTION ---
+
+if generate_btn:
+    if video_URL:
+        with st.spinner('🚀 Attempting to fetch content...'):
+            transcript = get_video_transcript(video_URL)
+            
+            # If Auto-fetch fails, show the Manual Fallback
+            if not transcript:
+                st.error("⚠️ YouTube blocked the automated fetch (Bot Detection).")
+                st.info("💡 **Solution:** Open the video on YouTube, click 'Show Transcript', copy the text, and paste it below.")
+                manual_text = st.text_area("Paste Transcript Text Here:", height=200)
+                if st.button("Generate from Pasted Text"):
+                    transcript = manual_text
+
+            # Proceed if we have text (either auto or manual)
+            if transcript:
+                with st.spinner('📖 Simplifying content...'):
+                    output_notes = generate_notes(transcript)
+                    st.video(video_URL)
+                    st.divider()
+                    st.write("### 🎧 Listen to your customized notes")
+                    markdown_to_voice(output_notes)
+                    st.audio('notes_voice.mp3')
+                    st.divider()
+                    st.markdown(output_notes)
+                    st.balloons()
+    else:
+        st.warning("Please enter a valid YouTube URL first!")
 
 def generate_notes(text: str) -> str:
     '''Generates ADHD/Dyslexia friendly notes using Google Gemini'''
