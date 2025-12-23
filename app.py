@@ -1,4 +1,4 @@
-import openai
+
 import os
 import streamlit as st
 from pytube import YouTube
