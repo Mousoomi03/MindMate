@@ -51,10 +51,7 @@ def get_video_transcript(video_url):
 
 
 def generate_notes(text: str) -> str:
-    """
-    Generate ADHD-friendly notes using Gemini (FREE)
-    """
-    model = genai.GenerativeModel("gemini-pro")
+    model = genai.GenerativeModel("models/gemini-1.0-pro")
 
     prompt = f"""
     You are a supportive teacher for students with ADHD and Dyslexia.
@@ -66,8 +63,6 @@ def generate_notes(text: str) -> str:
     4. Easy Mnemonics
     5. 5-question Quiz (MCQs)
 
-    Use friendly language.
-
     TEXT:
     {text}
     """
@@ -78,6 +73,7 @@ def generate_notes(text: str) -> str:
         return "⚠️ No response generated."
 
     return response.text.strip()
+
 
 
 def markdown_to_voice(text: str):
