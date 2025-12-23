@@ -16,16 +16,20 @@ genai.configure(api_key=st.secrets["GEMINI_KEY"])
 def get_video_transcript(video_url):
     '''Extracts transcript from YouTube video ID for free'''
     try:
-        video_id = video_url.split("=")[-1]
-        # Handle cases with & feature=...
-        if "&" in video_id:
-            video_id = video_id.split("&")[0]
-            
+        # Extracting the Video ID from the URL
+        if "v=" in video_url:
+            video_id = video_url.split("v=")[1].split("&")[0]
+        elif "youtu.be/" in video_url:
+            video_id = video_url.split("youtu.be/")[1].split("?")[0]
+        else:
+            video_id = video_url
+
         transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
         full_transcript = " ".join([i['text'] for i in transcript_list])
         return full_transcript
+        
     except Exception as e:
-        st.error(f"Could not retrieve transcript: {e}. Ensure the video has captions enabled.")
+        st.error(f"Error: {e}. Ensure the video has English captions enabled.")
         return None
 
 def generate_notes(text: str) -> str:
