@@ -23,10 +23,15 @@ def get_video_transcript(video_url):
     except Exception: return None
 
 def generate_notes(text: str) -> str:
-    # Adding 'models/' prefix for better compatibility with the API
-    model = genai.GenerativeModel('models/gemini-1.5-flash')
+    # Use 'gemini-1.5-flash' (no 'models/' prefix is required in most stable versions)
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
-    prompt = f"Summarize this for a neurodiverse learner: {text}"
+    prompt = f"""You are a teacher for students with ADHD/Dyslexia. 
+               Summarize the following text into sections: Title, Summary, Key Takeaways, Mnemonics, and Quiz.
+               
+               Text: {text}"""
+
+    # Generate response
     response = model.generate_content(prompt)
     return response.text
 
