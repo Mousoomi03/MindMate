@@ -16,7 +16,7 @@ genai.configure(api_key=st.secrets["GEMINI_KEY"])
 def get_video_transcript(video_url):
     '''Extracts transcript from YouTube video ID for free'''
     try:
-        # Extracting the Video ID from the URL
+        # Robust Video ID extraction
         if "v=" in video_url:
             video_id = video_url.split("v=")[1].split("&")[0]
         elif "youtu.be/" in video_url:
@@ -24,12 +24,13 @@ def get_video_transcript(video_url):
         else:
             video_id = video_url
 
+        # Calling the static method on the Class correctly
         transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
         full_transcript = " ".join([i['text'] for i in transcript_list])
         return full_transcript
         
     except Exception as e:
-        st.error(f"Error: {e}. Ensure the video has English captions enabled.")
+        st.error(f"Transcript Error: {e}. Please try a video with English CC enabled.")
         return None
 
 def generate_notes(text: str) -> str:
