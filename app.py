@@ -14,9 +14,8 @@ genai.configure(api_key=st.secrets["GEMINI_KEY"])
 # LOGIC FUNCTIONS
 
 def get_video_transcript(video_url):
-    '''Extracts transcript from YouTube video ID for free'''
     try:
-        # Improved Video ID extraction
+        # Improved extraction to handle all YouTube URL types
         video_id = None
         if "v=" in video_url:
             video_id = video_url.split("v=")[1].split("&")[0]
@@ -24,17 +23,25 @@ def get_video_transcript(video_url):
             video_id = video_url.split("youtu.be/")[1].split("?")[0]
         
         if not video_id:
-            st.error("Could not find a valid Video ID in the URL.")
+            st.error("Invalid YouTube URL.")
             return None
 
-        # Fetching the transcript
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        # Try to get the transcript (includes auto-generated as fallback)
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US'])
         full_transcript = " ".join([i['text'] for i in transcript_list])
         return full_transcript
         
     except Exception as e:
-        st.error(f"Transcript Error: {e}. Please ensure the video has English Closed Captions (CC) enabled.")
-        return None
+        # If English isn't found, this helper will look for any available transcript
+        try:
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            # Try to fetch the first available manual or auto transcript
+            transcript = transcript_list.find_transcript(['en', 'en-US']).fetch()
+            return " ".join([i['text'] for i in transcript])
+        except:
+            st.error(f"Transcript Error: {e}")
+            st.info("Try a different video or check if CC is available in your region.")
+            return None
 
 def generate_notes(text: str) -> str:
     '''Generates ADHD/Dyslexia friendly notes using Google Gemini'''
