@@ -53,25 +53,26 @@ def markdown_to_voice(text:str)-> None:
     speech = gTTS(text = cleaned_text)
     speech.save(output_file)
     
+import google.generativeai as genai
+
+# Setup Gemini API Key
+genai.configure(api_key=st.secrets["GEMINI_KEY"])
+
 def generate_notes(text:str)-> str:
-    '''Generates ADHD/Dyslexia friendly notes using GPT-3.5-turbo'''
-    prompt = """You are a teacher helping students with learning disabilities such as Dyslexia and ADHD. 
-               The answer must include: 1) Title, 2) Summary, 3) Key Takeaways, 4) Mnemonics, 5) Quiz Yourself!
-               Optional sections: Formulae, Code, Trivia, Jargons.
-               Use Markdown formatting, simple language, and a compassionate tone."""
-
-    messages = [
-        {"role": "system", "content": prompt}, 
-        {"role": "user", "content": text}
-    ]
-
-    chat = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", 
-        messages=messages, 
-        temperature=1.2
-    )
+    '''Generates ADHD/Dyslexia friendly notes using Google Gemini'''
     
-    return chat.choices[0].message.content
+    # Initialize the model
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    prompt = f"""You are a teacher helping students with learning disabilities such as Dyslexia and ADHD. 
+               Summarize the following text into these sections:
+               1) Title, 2) Summary, 3) Key Takeaways, 4) Mnemonics, 5) Quiz Yourself!
+               
+               Text to summarize: {text}"""
+
+    # Generate response
+    response = model.generate_content(prompt)
+    return response.text
 
 def display_sidebar_and_content(text: str) -> None:
     '''Displays table of contents in sidebar and main markdown content'''
