@@ -6,135 +6,84 @@ import re
 from gtts import gTTS
 import google.generativeai as genai
 
-# ==========================================
 # 1. API CONFIGURATION
-# ==========================================
+# Make sure GEMINI_KEY is in your Streamlit Cloud Secrets!
 genai.configure(api_key=st.secrets["GEMINI_KEY"])
 
-# ==========================================
 # 2. LOGIC FUNCTIONS
-# ==========================================
-
 def get_video_transcript(video_url):
-    '''Extracts transcript from YouTube video ID'''
     try:
-        video_id = None
         if "v=" in video_url:
             video_id = video_url.split("v=")[1].split("&")[0]
         elif "youtu.be/" in video_url:
             video_id = video_url.split("youtu.be/")[1].split("?")[0]
-        
-        if not video_id:
+        else:
             return None
 
-        # Fetch transcript
+        # Call on the Class directly, NOT an instance
         transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US'])
         return " ".join([i['text'] for i in transcript_list])
-        
     except Exception:
-        try:
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-            transcript = transcript_list.find_transcript(['en', 'en-US']).fetch()
-            return " ".join([i['text'] for i in transcript])
-        except:
-            return None
+        return None
 
 def generate_notes(text: str) -> str:
-    '''Generates ADHD/Dyslexia friendly notes using Google Gemini'''
     model = genai.GenerativeModel('gemini-1.5-flash')
-    prompt = f"""You are a specialized teacher for neurodiverse learners (ADHD/Dyslexia). 
-    Generate structured notes from the following text. 
-    Format the answer in Markdown with these EXACT sections:
-    
-    ## 📌 Title: [A clear, catchy title]
-    ## 📝 Summary: [A creative and intuitive explanation]
-    ## 💡 Key Takeaways: [Important points to remember]
-    ## 🧠 Mnemonics: [Acronyms or associations to help remember facts]
-    ## ❓ Quiz Yourself!: [3-5 Multiple choice questions with HIDDEN answers]
-    
-    Use simple, compassionate language. 
-    Text: {text}"""
+    prompt = f"Summarize this for a neurodiverse learner with Title, Summary, Key Takeaways, Mnemonics, and a Quiz: {text}"
     response = model.generate_content(prompt)
     return response.text
 
-def markdown_to_voice(text: str) -> None: 
-    '''Converts markdown text into a clean audio file'''
+def markdown_to_voice(text: str):
     output_file = "notes_voice.mp3"
     cleaned_text = re.sub(r'[#*`\-]', '', text)
     speech = gTTS(text=cleaned_text, lang='en')
     speech.save(output_file)
 
-# ==========================================
-# 3. STREAMLIT UI & MAIN APP LOGIC
-# ==========================================
-
+# 3. MAIN APP UI
 def main():
     st.set_page_config(page_title="MINDMATE", page_icon="🧠", layout="wide")
-
-    # Custom Styling
-    st.markdown("""
-        <style>
-        .stButton>button { width: 100%; border-radius: 20px; height: 3em; background-color: #4A90E2; color: white; border: none; }
-        .stTextInput>div>div>input { border-radius: 20px; }
-        </style>
-    """, unsafe_allow_html=True)
 
     # Sidebar
     with st.sidebar:
         try:
-            image_logo = Image.open("assets/images/mm.jpeg")
-            st.image(image_logo, use_container_width=True)
+            st.image("assets/images/mm.jpeg", use_container_width=True)
         except:
             st.title("🧠 MINDMATE")
-        st.header("Summarization Assistant")
-        st.info("Tailored for Neurodiverse Learners.")
-        st.divider()
+        st.info("Tailored for ADHD & Dyslexia.")
 
-    # Main Header Image
+    # Header Image
     try:
-        header_img = Image.open("assets/images/bg.jpg")
-        st.image(header_img, use_container_width=True)
+        st.image("assets/images/bg.jpg", use_container_width=True)
     except:
         st.write("---")
 
     st.title("MINDMATE 📝")
-    st.subheader("Transforming YouTube Content into Interactive Learning!")
-    st.divider()
+    video_URL = st.text_input("🔗 Paste YouTube URL here:")
+    generate_btn = st.button("Generate Notes ✨")
 
-    # Input Section
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        video_URL = st.text_input("🔗 Paste the YouTube URL here:", placeholder="https://youtube.com/watch?v=...")
-        generate_btn = st.button("Generate Notes ✨")
-
-    # --- APP LOGIC (Now inside main() where variables exist) ---
+    # ALL LOGIC MUST BE INSIDE main()
     if generate_btn:
         if video_URL:
-            with st.spinner('🚀 Attempting to fetch content...'):
-                transcript = get_video_transcript(video_URL)
-                
-                # If Auto-fetch fails, show the Manual Fallback
-                if not transcript:
-                    st.error("⚠️ YouTube blocked the automated fetch (Bot Detection).")
-                    st.info("💡 **Solution:** Copy the transcript from YouTube and paste it below.")
-                    manual_text = st.text_area("Paste Transcript Text Here:", height=200)
-                    if st.button("Process Pasted Text"):
-                        transcript = manual_text
+            transcript = get_video_transcript(video_URL)
+            
+            # Manual Fallback UI if YouTube blocks the fetch
+            if not transcript:
+                st.error("⚠️ YouTube blocked the automated fetch.")
+                st.info("Copy the transcript from YouTube and paste it below.")
+                transcript = st.text_area("Paste Transcript Text Here:", height=200)
+                # This sub-button processes the manually pasted text
+                if st.button("Process Pasted Text"):
+                    pass # The app will rerun and use the text in 'transcript'
 
-                # Proceed if we have text
-                if transcript:
-                    with st.spinner('📖 Simplifying content...'):
-                        output_notes = generate_notes(transcript)
-                        st.video(video_URL)
-                        st.divider()
-                        st.write("### 🎧 Listen to your notes")
-                        markdown_to_voice(output_notes)
-                        st.audio('notes_voice.mp3')
-                        st.divider()
-                        st.markdown(output_notes)
-                        st.balloons()
+            if transcript:
+                with st.spinner('🚀 Simplifying content...'):
+                    output_notes = generate_notes(transcript)
+                    st.video(video_URL)
+                    markdown_to_voice(output_notes)
+                    st.audio('notes_voice.mp3')
+                    st.markdown(output_notes)
+                    st.balloons()
         else:
-            st.warning("Please enter a valid YouTube URL first!")
+            st.warning("Please enter a URL.")
 
 if __name__ == '__main__':
     main()
