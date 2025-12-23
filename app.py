@@ -74,12 +74,12 @@ def main():
 
     # Final execution block
     if st.session_state.transcript and st.session_state.transcript.strip():
-    with st.spinner('🚀 Simplifying content...'):
-        try:
-            output_notes = generate_notes(st.session_state.transcript)
-            # ... rest of your display code ...
-        except Exception as e:
-            st.error(f"Gemini API Error: {e}")
+        with st.spinner('🚀 Simplifying content...'):
+            try:
+                output_notes = generate_notes(st.session_state.transcript)
+                # ... rest of your display code ...
+            except Exception as e:
+                st.error(f"Gemini API Error: {e}")
 
 if __name__ == '__main__':
     main()
