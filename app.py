@@ -3,20 +3,20 @@ import re
 import streamlit as st
 from youtube_transcript_api import YouTubeTranscriptApi
 from gtts import gTTS
-import google.generativeai as genai
+from openai import OpenAI
 from PIL import Image
 
 # =====================================================
-# 1. GEMINI API CONFIGURATION (SAFE FOR LOCAL + CLOUD)
+# 1. OPENAI API CONFIGURATION (SAFE FOR LOCAL + CLOUD)
 # =====================================================
 
-GEMINI_KEY = st.secrets.get("GEMINI_KEY") or os.getenv("GEMINI_KEY")
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
-if not GEMINI_KEY:
-    st.error("❌ Gemini API key not found. Add it to Streamlit secrets.")
+if not OPENAI_API_KEY:
+    st.error("❌ OpenAI API key not found. Add it to Streamlit secrets.")
     st.stop()
 
-genai.configure(api_key=GEMINI_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # =====================================================
 # 2. LOGIC FUNCTIONS
@@ -24,7 +24,8 @@ genai.configure(api_key=GEMINI_KEY)
 
 def get_video_transcript(video_url):
     """
-    Fetch YouTube transcript safely (supports normal, short & youtu.be links)
+    Fetch YouTube transcript safely
+    (supports watch, youtu.be, shorts)
     """
     try:
         video_id = None
@@ -52,10 +53,8 @@ def get_video_transcript(video_url):
 
 def generate_notes(text: str) -> str:
     """
-    Generate structured notes using Gemini
+    Generate ADHD-friendly notes using OpenAI
     """
-    model = genai.GenerativeModel("gemini-1.5-flash")
-
     prompt = f"""
     You are an expert teacher for students with ADHD and Dyslexia.
 
@@ -72,17 +71,21 @@ def generate_notes(text: str) -> str:
     {text}
     """
 
-    response = model.generate_content(prompt)
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a helpful educational assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.5
+    )
 
-    if not response or not response.text:
-        return "⚠️ No response generated."
-
-    return response.text.strip()
+    return response.choices[0].message.content.strip()
 
 
 def markdown_to_voice(text: str):
     """
-    Convert markdown notes to speech
+    Convert notes to speech
     """
     output_file = "notes_voice.mp3"
     cleaned_text = re.sub(r"[#*`>-]", "", text)
@@ -142,7 +145,7 @@ def main():
         else:
             st.warning("Please enter a YouTube URL.")
 
-    # ---------------- FALLBACK MANUAL INPUT ----------------
+    # ---------------- FALLBACK ----------------
     if (
         st.session_state.clicked
         and video_URL
@@ -181,7 +184,7 @@ def main():
                     )
 
             except Exception as e:
-                st.error(f"❌ Gemini Error: {e}")
+                st.error(f"❌ OpenAI Error: {e}")
 
 
 # =====================================================
