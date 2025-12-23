@@ -54,7 +54,7 @@ def generate_notes(text: str) -> str:
     """
     Generate ADHD-friendly notes using Gemini (FREE)
     """
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-pro")
 
     prompt = f"""
     You are a supportive teacher for students with ADHD and Dyslexia.
