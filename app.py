@@ -23,8 +23,10 @@ def get_video_transcript(video_url):
     except Exception: return None
 
 def generate_notes(text: str) -> str:
+    # Use 'gemini-1.5-flash' for the best free-tier compatibility
     model = genai.GenerativeModel('gemini-1.5-flash')
-    prompt = f"Summarize this for a neurodiverse learner (ADHD/Dyslexia): {text}"
+    
+    prompt = f"Summarize this for a neurodiverse learner: {text}"
     response = model.generate_content(prompt)
     return response.text
 
@@ -71,14 +73,13 @@ def main():
             st.session_state.transcript = pasted_text
 
     # Final execution block
-    if st.session_state.transcript:
-        with st.spinner('🚀 Simplifying content...'):
+    if st.session_state.transcript and st.session_state.transcript.strip():
+    with st.spinner('🚀 Simplifying content...'):
+        try:
             output_notes = generate_notes(st.session_state.transcript)
-            st.video(video_URL)
-            markdown_to_voice(output_notes)
-            st.audio('notes_voice.mp3')
-            st.markdown(output_notes)
-            st.balloons()
+            # ... rest of your display code ...
+        except Exception as e:
+            st.error(f"Gemini API Error: {e}")
 
 if __name__ == '__main__':
     main()
