@@ -3,20 +3,20 @@ import re
 import streamlit as st
 from youtube_transcript_api import YouTubeTranscriptApi
 from gtts import gTTS
-from openai import OpenAI
+import google.generativeai as genai
 from PIL import Image
 
 # =====================================================
-# 1. OPENAI API CONFIGURATION (SAFE FOR LOCAL + CLOUD)
+# 1. GEMINI API CONFIGURATION (FREE TIER)
 # =====================================================
 
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+GEMINI_KEY = st.secrets.get("GEMINI_KEY") or os.getenv("GEMINI_KEY")
 
-if not OPENAI_API_KEY:
-    st.error("❌ OpenAI API key not found. Add it to Streamlit secrets.")
+if not GEMINI_KEY:
+    st.error("❌ Gemini API key not found. Add it to Streamlit secrets.")
     st.stop()
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+genai.configure(api_key=GEMINI_KEY)
 
 # =====================================================
 # 2. LOGIC FUNCTIONS
@@ -24,8 +24,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_video_transcript(video_url):
     """
-    Fetch YouTube transcript safely
-    (supports watch, youtu.be, shorts)
+    Fetch YouTube transcript (watch / youtu.be / shorts)
     """
     try:
         video_id = None
@@ -41,9 +40,9 @@ def get_video_transcript(video_url):
             return None
 
         transcript = YouTubeTranscriptApi.get_transcript(
-            video_id,
-            languages=["en"]
+            video_id, languages=["en"]
         )
+
         return " ".join(i["text"] for i in transcript)
 
     except Exception as e:
@@ -53,39 +52,37 @@ def get_video_transcript(video_url):
 
 def generate_notes(text: str) -> str:
     """
-    Generate ADHD-friendly notes using OpenAI
+    Generate ADHD-friendly notes using Gemini (FREE)
     """
-    prompt = f"""
-    You are an expert teacher for students with ADHD and Dyslexia.
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
-    Create EASY-TO-READ notes with:
+    prompt = f"""
+    You are a supportive teacher for students with ADHD and Dyslexia.
+
+    Create SIMPLE, CLEAR notes with:
     1. Title
     2. Short Summary
-    3. Key Takeaways (bullet points)
-    4. Simple Mnemonics
+    3. Key Takeaways (bullets)
+    4. Easy Mnemonics
     5. 5-question Quiz (MCQs)
 
-    Keep language simple and friendly.
+    Use friendly language.
 
     TEXT:
     {text}
     """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful educational assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.5
-    )
+    response = model.generate_content(prompt)
 
-    return response.choices[0].message.content.strip()
+    if not response or not response.text:
+        return "⚠️ No response generated."
+
+    return response.text.strip()
 
 
 def markdown_to_voice(text: str):
     """
-    Convert notes to speech
+    Convert notes to audio
     """
     output_file = "notes_voice.mp3"
     cleaned_text = re.sub(r"[#*`>-]", "", text)
@@ -95,7 +92,7 @@ def markdown_to_voice(text: str):
 
 
 # =====================================================
-# 3. MAIN STREAMLIT APP
+# 3. STREAMLIT APP
 # =====================================================
 
 def main():
@@ -105,7 +102,7 @@ def main():
         layout="wide"
     )
 
-    # Session State
+    # Session state
     if "transcript" not in st.session_state:
         st.session_state.transcript = None
     if "clicked" not in st.session_state:
@@ -141,7 +138,7 @@ def main():
                 st.session_state.transcript = get_video_transcript(video_URL)
 
             if not st.session_state.transcript:
-                st.error("⚠️ Auto transcript failed (YouTube bot protection).")
+                st.error("⚠️ Automatic transcript unavailable for this video.")
         else:
             st.warning("Please enter a YouTube URL.")
 
@@ -151,7 +148,7 @@ def main():
         and video_URL
         and not st.session_state.transcript
     ):
-        st.info("💡 **Solution:** Copy the transcript from YouTube and paste it below.")
+        st.info("💡 Copy the transcript from YouTube and paste it below.")
         pasted_text = st.text_area(
             "Paste Transcript Text Here:",
             height=220
@@ -184,11 +181,11 @@ def main():
                     )
 
             except Exception as e:
-                st.error(f"❌ OpenAI Error: {e}")
+                st.error(f"❌ Gemini Error: {e}")
 
 
 # =====================================================
-# 4. RUN APP
+# 4. RUN
 # =====================================================
 
 if __name__ == "__main__":
